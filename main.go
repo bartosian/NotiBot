@@ -24,8 +24,12 @@ const (
 	callVoiceTemplate = "RECEIVED MESSAGE FROM %s IN %s CHANNEL"
 	messageTemplate   = "📢 [ RECEIVED MESSAGE FROM %s IN %s CHANNEL ]"
 
-	alertVoiceTemplate   = "NEW ALERT TRIGGERED!\n\n*ALERT NAME:* %s\n*SUMMARY:* %s\n*START TIME:* %s\n*END TIME:* %s\n*STATUS:* %s\n\n"
-	alertMessageTemplate = "🚨 NEW ALERT TRIGGERED!\n\n🔴 ALERT NAME: %s\n\n🔴 SUMMARY: %s\n\n🔴 START TIME: %s\n\n🔴 END TIME: %s\n\n🔴 STATUS: %s\n\n"
+	alertVoiceTriggeredTemplate   = "NEW ALERT TRIGGERED!\n\n*ALERT NAME:* %s\n*SUMMARY:* %s\n*START TIME:* %s\n*END TIME:* %s\n*STATUS:* %s\n\n"
+	alertMessageTriggeredTemplate = "🚨 NEW ALERT TRIGGERED!\n\n🔴 ALERT NAME: %s\n\n🔴 SUMMARY: %s\n\n🔴 START TIME: %s\n\n🔴 END TIME: %s\n\n🔴 STATUS: %s\n\n"
+	alertMessageRecoveredTemplate = "✅ ALL ALERTS HAVE BEEN RESOLVED AND THE SYSTEM IS NOW OPERATING NORMALLY."
+
+	alertIntervalCheck          = 1 * time.Minute
+	alertTriggeredIntervalCheck = 3 * time.Minute
 )
 
 func main() {
@@ -71,9 +75,18 @@ func main() {
 		}
 
 		go func() {
+			var isTriggered bool
+
+			intervalCheck := alertIntervalCheck
+
 			for {
-				checkAlerts()
-				time.Sleep(time.Minute)
+				if isTriggered = checkAlerts(isTriggered); isTriggered {
+					intervalCheck = alertTriggeredIntervalCheck
+				} else {
+					intervalCheck = alertIntervalCheck
+				}
+
+				time.Sleep(intervalCheck)
 			}
 		}()
 	}
@@ -182,7 +195,7 @@ type AlertData struct {
 	Labels       AlertLabels      `json:"labels"`
 }
 
-func checkAlerts() {
+func checkAlerts(isTriggered bool) bool {
 	resp, err := http.Get(os.Getenv("ALERT_MANAGER_URL"))
 	if err != nil {
 		log.Fatal("Error fetching alerts: ", err)
@@ -195,7 +208,11 @@ func checkAlerts() {
 		log.Fatal("Error reading response body: ", err)
 	}
 
-	var alertList []AlertData
+	var (
+		voiceBody   string
+		messageBody string
+		alertList   []AlertData
+	)
 
 	err = json.Unmarshal(data, &alertList)
 	if err != nil {
@@ -203,32 +220,36 @@ func checkAlerts() {
 	}
 
 	if len(alertList) == 0 {
-		log.Println("no active alerts found")
+		if isTriggered {
+			voiceBody = alertMessageRecoveredTemplate
+			messageBody = alertMessageRecoveredTemplate
 
-		return
-	}
+			isTriggered = false
+		} else {
+			log.Println("no active alerts found")
 
-	var (
-		voiceBody   string
-		messageBody string
-	)
+			return false
+		}
+	} else {
+		isTriggered = true
 
-	for _, alert := range alertList {
-		voiceBody += fmt.Sprintf(alertVoiceTemplate,
-			alert.Labels.Alertname,
-			alert.Annotations.Summary,
-			alert.StartsAt,
-			alert.EndsAt,
-			alert.Status.State,
-		)
+		for _, alert := range alertList {
+			voiceBody += fmt.Sprintf(alertVoiceTriggeredTemplate,
+				alert.Labels.Alertname,
+				alert.Annotations.Summary,
+				alert.StartsAt,
+				alert.EndsAt,
+				alert.Status.State,
+			)
 
-		messageBody += fmt.Sprintf(alertMessageTemplate,
-			alert.Labels.Alertname,
-			alert.Annotations.Summary,
-			alert.StartsAt,
-			alert.EndsAt,
-			alert.Status.State,
-		)
+			messageBody += fmt.Sprintf(alertMessageTriggeredTemplate,
+				alert.Labels.Alertname,
+				alert.Annotations.Summary,
+				alert.StartsAt,
+				alert.EndsAt,
+				alert.Status.State,
+			)
+		}
 	}
 
 	getDelimiter()
@@ -236,6 +257,8 @@ func checkAlerts() {
 	makePhoneCall(voiceBody)
 	sendTextMessage(messageBody)
 	getDelimiter()
+
+	return isTriggered
 }
 
 func getCurrentTime() {
