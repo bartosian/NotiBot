@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,8 +25,8 @@ const (
 	callVoiceTemplate = "RECEIVED MESSAGE FROM %s IN %s CHANNEL"
 	messageTemplate   = "📢 [ RECEIVED MESSAGE FROM %s IN %s CHANNEL ]"
 
-	alertVoiceTemplate   = "ALERT TRIGGERED: %s (SEVERITY: %s, LABELS: %v)"
-	alertMessageTemplate = "🔥 [ ALERT TRIGGERED: %s (SEVERITY: %s, LABELS: %v) ]"
+	alertVoiceTemplate   = "ALERT TRIGGERED AT %s: %s (SEVERITY: %s, LABELS: %v)"
+	alertMessageTemplate = "🔥 [ ALERT TRIGGERED AT %s: %s (SEVERITY: %s, LABELS: %v) ]"
 )
 
 func main() {
@@ -144,37 +146,55 @@ func sendTextMessage(messageContent string) {
 	fmt.Println("Text message sent.")
 }
 
+type Alert struct {
+	ActiveAt    time.Time              `json:"activeAt"`
+	Annotations map[string]interface{} `json:"annotations"`
+	Labels      map[string]interface{} `json:"labels"`
+	State       string                 `json:"state"`
+	Value       string                 `json:"value"`
+}
+
 type AlertList struct {
-	Data []struct {
-		Labels      map[string]string `json:"labels"`
-		Annotations map[string]string `json:"annotations"`
+	Data struct {
+		Alerts []Alert `json:"alerts"`
 	} `json:"data"`
+	Error     string `json:"error"`
+	ErrorType string `json:"errorType"`
+	Status    string `json:"status"`
 }
 
 func checkAlerts() {
 	resp, err := http.Get(alertManagerAPI)
 	if err != nil {
-		fmt.Println("Error retrieving alerts:", err)
-		return
+		log.Fatal("Error fetching alerts: ", err)
+	}
+	
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Error reading response body: ", err)
 	}
 
 	var alerts AlertList
-	err = json.NewDecoder(resp.Body).Decode(&alerts)
+	err = json.Unmarshal(data, &alerts)
 	if err != nil {
-		fmt.Println("Error parsing alert list:", err)
-		return
+		log.Fatal("Error parsing alert list: ", err)
 	}
 
-	if len(alerts.Data) > 0 {
-		for _, alert := range alerts.Data {
+	alertsData := alerts.Data.Alerts
+
+	if len(alertsData) > 0 {
+		for _, alert := range alertsData {
+			alertActivatedAt := alert.ActiveAt
 			alertName := alert.Labels["alertname"]
 			alertSeverity := alert.Labels["severity"]
 			alertLabels := alert.Labels
 
 			getDelimiter()
 			getCurrentTime()
-			makePhoneCall(fmt.Sprintf(alertVoiceTemplate, alertName, alertSeverity, alertLabels))
-			sendTextMessage(fmt.Sprintf(alertMessageTemplate, alertName, alertSeverity, alertLabels))
+			makePhoneCall(fmt.Sprintf(alertVoiceTemplate, alertActivatedAt, alertName, alertSeverity, alertLabels))
+			sendTextMessage(fmt.Sprintf(alertMessageTemplate, alertActivatedAt, alertName, alertSeverity, alertLabels))
 			getDelimiter()
 		}
 	}
