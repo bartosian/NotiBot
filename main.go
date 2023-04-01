@@ -163,12 +163,14 @@ type AlertList struct {
 	Status    string `json:"status"`
 }
 
+var emptyData = []byte(`{"alerts": []}`)
+
 func checkAlerts() {
 	resp, err := http.Get(alertManagerAPI)
 	if err != nil {
 		log.Fatal("Error fetching alerts: ", err)
 	}
-	
+
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
@@ -179,7 +181,13 @@ func checkAlerts() {
 	var alerts AlertList
 	err = json.Unmarshal(data, &alerts)
 	if err != nil {
-		log.Fatal("Error parsing alert list: ", err)
+		if err.Error() == "json: cannot unmarshal array into Go value of type main.AlertList" {
+			fmt.Println("Received empty alert array")
+		} else {
+			fmt.Println("Error parsing alert list:", err)
+		}
+	} else {
+		fmt.Println("Parsed alert list:", alerts)
 	}
 
 	alertsData := alerts.Data.Alerts
