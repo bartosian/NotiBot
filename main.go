@@ -21,12 +21,11 @@ import (
 )
 
 const (
-	alertManagerAPI   = "http://localhost:9093/api/v2/alerts"
 	callVoiceTemplate = "RECEIVED MESSAGE FROM %s IN %s CHANNEL"
 	messageTemplate   = "📢 [ RECEIVED MESSAGE FROM %s IN %s CHANNEL ]"
 
-	alertVoiceTemplate   = "ALERT TRIGGERED AT %s: %s (SEVERITY: %s, LABELS: %v)"
-	alertMessageTemplate = "🔥 [ ALERT TRIGGERED AT %s: %s (SEVERITY: %s, LABELS: %v) ]"
+	alertVoiceTemplate   = "NEW ALERT TRIGGERED!\n\n*ALERT NAME:* %s\n*SUMMARY:* %s\n*START TIME:* %s\n*END TIME:* %s\n*STATUS:* %s\n\n"
+	alertMessageTemplate = "🚨 NEW ALERT TRIGGERED!\n\n🔴 ALERT NAME: %s\n\n🔴 SUMMARY: %s\n\n🔴 START TIME: %s\n\n🔴 END TIME: %s\n\n🔴 STATUS: %s\n\n"
 )
 
 func main() {
@@ -65,6 +64,12 @@ func main() {
 	}
 
 	if *enableAlerts {
+		if os.Getenv("ALERT_MANAGER_URL") == "" {
+			fmt.Printf("Error: Environment variable %s is not set\n", "ALERT_MANAGER_URL")
+
+			return
+		}
+
 		go func() {
 			for {
 				checkAlerts()
@@ -122,6 +127,7 @@ func makePhoneCall(messageContent string) {
 		return
 	}
 
+	fmt.Println(messageContent)
 	fmt.Println("Phone call initiated.")
 }
 
@@ -146,27 +152,38 @@ func sendTextMessage(messageContent string) {
 	fmt.Println("Text message sent.")
 }
 
-type Alert struct {
-	ActiveAt    time.Time              `json:"activeAt"`
-	Annotations map[string]interface{} `json:"annotations"`
-	Labels      map[string]interface{} `json:"labels"`
-	State       string                 `json:"state"`
-	Value       string                 `json:"value"`
+type AlertReceiver struct {
+	Name string `json:"name"`
 }
 
-type AlertList struct {
-	Data struct {
-		Alerts []Alert `json:"alerts"`
-	} `json:"data"`
-	Error     string `json:"error"`
-	ErrorType string `json:"errorType"`
-	Status    string `json:"status"`
+type AlertStatus struct {
+	InhibitedBy []string `json:"inhibitedBy"`
+	SilencedBy  []string `json:"silencedBy"`
+	State       string   `json:"state"`
 }
 
-var emptyData = []byte(`{"alerts": []}`)
+type AlertLabels struct {
+	Alertname string `json:"alertname"`
+}
+
+type AlertAnnotations struct {
+	Summary string `json:"summary"`
+}
+
+type AlertData struct {
+	Annotations  AlertAnnotations `json:"annotations"`
+	EndsAt       string           `json:"endsAt"`
+	Fingerprint  string           `json:"fingerprint"`
+	Receivers    []AlertReceiver  `json:"receivers"`
+	StartsAt     string           `json:"startsAt"`
+	Status       AlertStatus      `json:"status"`
+	UpdatedAt    string           `json:"updatedAt"`
+	GeneratorURL string           `json:"generatorURL"`
+	Labels       AlertLabels      `json:"labels"`
+}
 
 func checkAlerts() {
-	resp, err := http.Get(alertManagerAPI)
+	resp, err := http.Get(os.Getenv("ALERT_MANAGER_URL"))
 	if err != nil {
 		log.Fatal("Error fetching alerts: ", err)
 	}
@@ -178,34 +195,47 @@ func checkAlerts() {
 		log.Fatal("Error reading response body: ", err)
 	}
 
-	var alerts AlertList
-	err = json.Unmarshal(data, &alerts)
+	var alertList []AlertData
+
+	err = json.Unmarshal(data, &alertList)
 	if err != nil {
-		if err.Error() == "json: cannot unmarshal array into Go value of type main.AlertList" {
-			fmt.Println("Received empty alert array")
-		} else {
-			fmt.Println("Error parsing alert list:", err)
-		}
-	} else {
-		fmt.Println("Parsed alert list:", alerts)
+		log.Fatal("error parsing alert list", err)
 	}
 
-	alertsData := alerts.Data.Alerts
+	if len(alertList) == 0 {
+		log.Println("no active alerts found")
 
-	if len(alertsData) > 0 {
-		for _, alert := range alertsData {
-			alertActivatedAt := alert.ActiveAt
-			alertName := alert.Labels["alertname"]
-			alertSeverity := alert.Labels["severity"]
-			alertLabels := alert.Labels
-
-			getDelimiter()
-			getCurrentTime()
-			makePhoneCall(fmt.Sprintf(alertVoiceTemplate, alertActivatedAt, alertName, alertSeverity, alertLabels))
-			sendTextMessage(fmt.Sprintf(alertMessageTemplate, alertActivatedAt, alertName, alertSeverity, alertLabels))
-			getDelimiter()
-		}
+		return
 	}
+
+	var (
+		voiceBody   string
+		messageBody string
+	)
+
+	for _, alert := range alertList {
+		voiceBody += fmt.Sprintf(alertVoiceTemplate,
+			alert.Labels.Alertname,
+			alert.Annotations.Summary,
+			alert.StartsAt,
+			alert.EndsAt,
+			alert.Status.State,
+		)
+
+		messageBody += fmt.Sprintf(alertMessageTemplate,
+			alert.Labels.Alertname,
+			alert.Annotations.Summary,
+			alert.StartsAt,
+			alert.EndsAt,
+			alert.Status.State,
+		)
+	}
+
+	getDelimiter()
+	getCurrentTime()
+	makePhoneCall(voiceBody)
+	sendTextMessage(messageBody)
+	getDelimiter()
 }
 
 func getCurrentTime() {

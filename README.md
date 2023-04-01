@@ -28,6 +28,7 @@ Environment=\"TWILIO_AUTH_TOKEN=<TWILIO_AUTH_TOKEN>\"
 Environment=\"TWILIO_PHONE_NUMBER=<TWILIO_PHONE_NUMBER>\"
 Environment=\"YOUR_PHONE_NUMBER=<YOUR_PHONE_NUMBER>\"
 Environment=\"DISCORD_CHANNEL=<DISCORD_CHANNEL>\"
+Environment=\"ALERT_MANAGER_URL=<ALERT_MANAGER_URL>\"
 ExecStart=/usr/local/bin/dstwilio
 Restart=on-failure
 RestartSec=always
@@ -54,6 +55,12 @@ sudo systemctl status dstwilio
 
 ```shell
 go run main.go --envrc
+```
+
+9. The --alerts flag is an optional command-line argument that allows the Discord call bot to connect to an Alertmanager running on the same machine. With this flag, the bot will listen for any alerts triggered by the Alertmanager and send a message to the specified Discord channel with information about the alert. When the alert recovers, the bot will send another message indicating that the alert has been resolved. This feature can be useful for receiving real-time alerts about system or application failures.
+
+```shell
+go run main.go --alerts
 ```
 
 # License
