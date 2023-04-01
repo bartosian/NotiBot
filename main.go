@@ -14,10 +14,20 @@ import (
 )
 
 func main() {
-	err := godotenv.Load(".envrc")
-	if err != nil {
-		fmt.Println("Error loading .envrc file:", err)
-		return
+	if os.Getenv("NOTIFY_SOCKET") == "" {
+		err := godotenv.Load(".envrc")
+		if err != nil {
+			fmt.Println("Error loading .envrc file:", err)
+			return
+		}
+	}
+
+	requiredVars := []string{"TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER", "YOUR_PHONE_NUMBER", "DISCORD_BOT_TOKEN", "DISCORD_CHANNEL"}
+	for _, envVar := range requiredVars {
+		if os.Getenv(envVar) == "" {
+			fmt.Printf("Error: Environment variable %s is not set\n", envVar)
+			return
+		}
 	}
 
 	dg, err := discordgo.New("Bot " + os.Getenv("DISCORD_BOT_TOKEN"))
