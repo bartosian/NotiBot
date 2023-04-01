@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -16,8 +18,18 @@ import (
 	twiliorest "github.com/twilio/twilio-go/rest/api/v2010"
 )
 
+const (
+	alertManagerAPI   = "http://localhost:9093/api/v2/alerts"
+	callVoiceTemplate = "RECEIVED MESSAGE FROM %s IN %s CHANNEL"
+	messageTemplate   = "📢 [ RECEIVED MESSAGE FROM %s IN %s CHANNEL ]"
+
+	alertVoiceTemplate   = "ALERT TRIGGERED: %s (SEVERITY: %s, LABELS: %v)"
+	alertMessageTemplate = "🔥 [ ALERT TRIGGERED: %s (SEVERITY: %s, LABELS: %v) ]"
+)
+
 func main() {
 	readEnvrc := flag.Bool("envrc", false, "read environment variables from .envrc file")
+	enableAlerts := flag.Bool("alerts", false, "receive alerts from grafana alert manager")
 	flag.Parse()
 
 	if *readEnvrc {
@@ -50,6 +62,15 @@ func main() {
 		return
 	}
 
+	if *enableAlerts {
+		go func() {
+			for {
+				checkAlerts()
+				time.Sleep(time.Minute)
+			}
+		}()
+	}
+
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
@@ -74,24 +95,24 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if channel.Name == targetChannel {
 		getDelimiter()
 		getCurrentTime()
-		makePhoneCall()
-		sendTextMessage(fmt.Sprintf("📢 [ RECEIVED MESSAGE FROM: %s IN %s CHANNEL]", m.Author.Username, targetChannel))
+		makePhoneCall(fmt.Sprintf(callVoiceTemplate, m.Author.Username, targetChannel))
+		sendTextMessage(fmt.Sprintf(messageTemplate, m.Author.Username, targetChannel))
 		getDelimiter()
 	}
 }
 
-func makePhoneCall() {
+func makePhoneCall(messageContent string) {
 	client := twilioclient.NewTwilioClientWithoutKeepAlives()
 
 	fromPhone := os.Getenv("TWILIO_PHONE_NUMBER")
 	toPhone := os.Getenv("YOUR_PHONE_NUMBER")
-	twimlURL := "http://demo.twilio.com/docs/voice.xml"
 
 	params := &twiliorest.CreateCallParams{
 		From: &fromPhone,
 		To:   &toPhone,
-		Url:  &twimlURL,
 	}
+
+	params.SetTwiml(fmt.Sprintf("<Response><Say>%s</Say></Response>", messageContent))
 
 	_, err := client.Api.CreateCall(params)
 	if err != nil {
@@ -121,6 +142,42 @@ func sendTextMessage(messageContent string) {
 	}
 
 	fmt.Println("Text message sent.")
+}
+
+type AlertList struct {
+	Data []struct {
+		Labels      map[string]string `json:"labels"`
+		Annotations map[string]string `json:"annotations"`
+	} `json:"data"`
+}
+
+func checkAlerts() {
+	resp, err := http.Get(alertManagerAPI)
+	if err != nil {
+		fmt.Println("Error retrieving alerts:", err)
+		return
+	}
+
+	var alerts AlertList
+	err = json.NewDecoder(resp.Body).Decode(&alerts)
+	if err != nil {
+		fmt.Println("Error parsing alert list:", err)
+		return
+	}
+
+	if len(alerts.Data) > 0 {
+		for _, alert := range alerts.Data {
+			alertName := alert.Labels["alertname"]
+			alertSeverity := alert.Labels["severity"]
+			alertLabels := alert.Labels
+
+			getDelimiter()
+			getCurrentTime()
+			makePhoneCall(fmt.Sprintf(alertVoiceTemplate, alertName, alertSeverity, alertLabels))
+			sendTextMessage(fmt.Sprintf(alertMessageTemplate, alertName, alertSeverity, alertLabels))
+			getDelimiter()
+		}
+	}
 }
 
 func getCurrentTime() {
