@@ -1,20 +1,26 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
+
+	"dstwilio/twilioclient"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	twiliorest "github.com/twilio/twilio-go/rest/api/v2010"
-
-	"dstwilio/twilioclient"
 )
 
 func main() {
-	if os.Getenv("NOTIFY_SOCKET") == "" {
+	readEnvrc := flag.Bool("envrc", false, "read environment variables from .envrc file")
+	flag.Parse()
+
+	if *readEnvrc {
 		err := godotenv.Load(".envrc")
 		if err != nil {
 			fmt.Println("Error loading .envrc file:", err)
@@ -66,8 +72,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if channel.Name == targetChannel {
+		getDelimiter()
+		getCurrentTime()
 		makePhoneCall()
 		sendTextMessage(fmt.Sprintf("📢 [ RECEIVED MESSAGE FROM: %s IN %s CHANNEL]", m.Author.Username, targetChannel))
+		getDelimiter()
 	}
 }
 
@@ -112,4 +121,17 @@ func sendTextMessage(messageContent string) {
 	}
 
 	fmt.Println("Text message sent.")
+}
+
+func getCurrentTime() {
+	currentTime := time.Now()
+	formattedTime := currentTime.Format("Monday, January 2, 2006 at 3:04pm")
+
+	fmt.Println("The current time is:", formattedTime)
+}
+
+func getDelimiter() {
+	delimiter := strings.Repeat("-", 60)
+
+	fmt.Println(delimiter)
 }
