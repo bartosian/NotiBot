@@ -91,6 +91,8 @@ ExecStart=/usr/local/bin/prometheus \
 [Install]
 WantedBy=multi-user.target" > /etc/systemd/system/prometheus.service
 
+sudo rm -rf prometheus-2.31.0*
+
 # Reload systemd daemon to load new service file
 sudo systemctl daemon-reload
 
@@ -113,8 +115,7 @@ sudo ufw allow 9090
 # Install Node Exporter for Prometheus
 
 # Download Node Exporter from the official website
-cd /tmp
-curl -LO https://github.com/prometheus/node_exporter/releases/download/v0.5.0/node_exporter-1.5.0.linux-amd64.tar.gz
+curl -LO https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz
 
 # Extract Node Exporter and move it to the appropriate directory
 tar -xvf node_exporter-1.5.0.linux-amd64.tar.gz
@@ -137,6 +138,8 @@ ExecStart=/usr/local/bin/node_exporter
 [Install]
 WantedBy=multi-user.target" > /etc/systemd/system/node_exporter.service
 
+sudo rm -rf node_exporter-1.5.0*
+
 # Reload systemd daemon to load new service file
 sudo systemctl daemon-reload
 
@@ -153,13 +156,12 @@ journalctl -u node_exporter -f
 # install alert manager
 
 # Install Alert Manager
-cd /tmp
 
 # Download Alert Manager
 curl -LO https://github.com/prometheus/alertmanager/releases/download/v0.25.0/alertmanager-0.25.0.linux-amd64.tar.gz
 
 # Extract Alert Manager
-tar -xvf node_exporter-0.25.0.linux-amd64.tar.gz
+tar -xvf alertmanager-0.25.0.linux-amd64.tar.gz
 
 # Move Alert Manager binary to /usr/local/bin/
 sudo mv alertmanager-0.25.0.linux-amd64/alertmanager /usr/local/bin/
@@ -242,6 +244,8 @@ journalctl -u alertmanager -f
 # Copy amtool binary to /usr/local/bin directory
 sudo cp alertmanager-0.25.0.linux-amd64/amtool /usr/local/bin/
 
+sudo rm -rf alertmanager-0.25.0*
+
 # Create directory for amtool configuration
 sudo mkdir -p /etc/amtool
 
@@ -320,6 +324,12 @@ echo "groups:
         summary: "High disk usage on {{ $labels.instance }}"
         description: "Disk usage on {{ $labels.instance }} has been above 90% for the last 10 minutes."" > /etc/prometheus/rules.yml
 
+# Trigger test alert
+curl -H "Content-Type: application/json" -XPOST http://localhost:9093/api/v2/alerts -d '[{"labels": {"alertname":"TestAlert"},"generatorURL":"http://localhost:9090/graph","annotations": {"summary":"TestAlert"}}]'
+# Check alert was queued
+
+curl http://localhost:9093/api/v2/alerts
+
 # Configure targets in /etc/prometheus/prometheus.yml
 echo "# my global config
 global:
@@ -362,8 +372,16 @@ scrape_configs:
 
 # Restart Prometheus to apply new configuration changes.
 sudo systemctl restart prometheus
+sudo systemctl status prometheus
+journalctl -u prometheus -f
+
+# Check Prometheus work correctly and all tne targets are reachable: http://45.250.253.76:9090/targets
 
 # Configure journal logging to be persistent across reboots.
 sudo tee <<EOF >/dev/null /etc/systemd/journald.conf
 Storage=persistent
 EOF
+
+# Dashboard template to use for SUI validator in Grafana: https://grafana.com/grafana/dashboards/18297-sui-validator-dashboard-1-0
+# How to add Data Source and Dashboard to Grafana: https://www.digitalocean.com/community/tutorials/how-to-monitor-mongodb-with-grafana-and-prometheus-on-ubuntu-20-04
+
