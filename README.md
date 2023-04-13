@@ -9,9 +9,9 @@ To install and run the bot, follow these steps:
 2. Create a [Discord bot](https://discordpy.readthedocs.io/en/stable/discord.html) by following the instructions.
 3. Install Go on your system.
 4. Clone the repository using the command git clone git@github.com:bartosian/dstwilio.git.
-5. Change to the cloned directory using the command cd dstwilio.
-6. Build the executable using the command go build -o dstwilio main.go.
-7. Move the executable to /usr/local/bin using the command sudo mv dstwilio /usr/local/bin.
+5. Change to the cloned directory using the command ``cd dstwilio``.
+6. Build the executable using the command ``go build -o dstwilio main.go``.
+7. Move the executable to /usr/local/bin using the command ``sudo mv dstwilio /usr/local/bin``.
 8. Set the required environment variables and create a system service file. To create the service file, run the following commands:
 
 ```shell
