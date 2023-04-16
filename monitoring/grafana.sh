@@ -190,41 +190,7 @@ Restart=always
 WantedBy=multi-user.target" > /etc/systemd/system/alertmanager.service
 
 # Create configuration file for Alert Manager to use slack integration
-echo "global:
-  resolve_timeout: 1m
-  slack_api_url: 'https://hooks.slack.com/services/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'
-
-route:
-  receiver: 'slack-notifications'
-
-receivers:
-- name: 'slack-notifications'
-  slack_configs:
-  - channel: '#sui-alerts'
-    send_resolved: true
-    icon_url: https://avatars3.githubusercontent.com/u/3380462
-    title: |-
-     [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }} for {{ .CommonLabels.job }}
-     {{- if gt (len .CommonLabels) (len .GroupLabels) -}}
-       {{" "}}(
-       {{- with .CommonLabels.Remove .GroupLabels.Names }}
-         {{- range $index, $label := .SortedPairs -}}
-           {{ if $index }}, {{ end }}
-           {{- $label.Name }}="{{ $label.Value -}}"
-         {{- end }}
-       {{- end -}}
-       )
-     {{- end }}
-    text: >-
-     {{ range .Alerts -}}
-     *Alert:* {{ .Annotations.title }}{{ if .Labels.severity }} - `{{ .Labels.severity }}`{{ end }}
-
-     *Description:* {{ .Annotations.description }}
-
-     *Details:*
-       {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
-       {{ end }}
-     {{ end }}" > /etc/alertmanager/alertmanager.yml
+cp alertmanager-example.yaml /etc/alertmanager/alertmanager.yml
 
 # Reload systemd daemon
 sudo systemctl daemon-reload
@@ -256,73 +222,7 @@ echo "alertmanager.url: http://localhost:9093" > /etc/amtool/config.yml
 amtool config show
 
 # Create alerting rules file with multiple alerting rules
-echo "groups:
-  - name: sui-node
-    rules:
-    - alert: NodeDown
-      expr: increase(uptime{}[5m]) == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Sui Node {{ $labels.instance }} uptime is stuck"
-        description: "Sui Node {{ $labels.instance }} uptime is stuck"
-
-    - alert: NodeCurrentRoundStuck
-      expr: increase(current_round{}[5m]) == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Sui Node {{ $labels.instance }} current round is stuck"
-        description: "Sui Node {{ $labels.instance }} current round is stuck"
-
-    - alert: NodeLastCommittedRoundsStuck
-      expr: increase(last_committed_round{}[5m]) == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Sui Node {{ $labels.instance }} last committed round is stuck"
-        description: "Sui Node {{ $labels.instance }} last committed round is stuck"
-
-    - alert: LastExecutedCheckpoint
-      expr: increase(last_executed_checkpoint{}[5m]) == 0
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Checkpoints are not being executed on {{ $labels.instance }}"
-        description: "Checkpoints are not being executed on {{ $labels.instance }}"
-
-  - name: system
-    rules:
-    - alert: HighCpuUsage
-      expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
-      for: 1m
-      labels:
-        severity: critical
-      annotations:
-        summary: "High CPU usage on {{ $labels.instance }}"
-        description: "CPU usage on {{ $labels.instance }} has been above 80% for the last 1 minute."
-
-    - alert: HighMemoryUsage
-      expr: (node_memory_Active_bytes / node_memory_MemTotal_bytes) > 0.8
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: "High memory usage on {{ $labels.instance }}"
-        description: "Memory usage on {{ $labels.instance }} has been above 80% for the last 5 minutes."
-
-    - alert: HighDiskUsage
-      expr: (node_filesystem_size_bytes{fstype="ext4"} - node_filesystem_free_bytes{fstype="ext4"}) / node_filesystem_size_bytes{fstype="ext4"} > 0.9
-      for: 10m
-      labels:
-        severity: critical
-      annotations:
-        summary: "High disk usage on {{ $labels.instance }}"
-        description: "Disk usage on {{ $labels.instance }} has been above 90% for the last 10 minutes."" > /etc/prometheus/rules.yml
+cp rules-example.yaml /etc/prometheus/rules.yml
 
 # Trigger test alert
 curl -H "Content-Type: application/json" -XPOST http://localhost:9093/api/v2/alerts -d '[{"labels": {"alertname":"TestAlert"},"generatorURL":"http://localhost:9090/graph","annotations": {"summary":"TestAlert"}}]'
@@ -331,44 +231,7 @@ curl -H "Content-Type: application/json" -XPOST http://localhost:9093/api/v2/ale
 curl http://localhost:9093/api/v2/alerts
 
 # Configure targets in /etc/prometheus/prometheus.yml
-echo "# my global config
-global:
-  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
-  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
-  # scrape_timeout is set to the global default (10s).
-
-# Alertmanager configuration
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          - 127.0.0.1:9093
-
-# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
-rule_files:
-  - rules.yml
-
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
-scrape_configs:
-  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-  - job_name: "prometheus"
-
-    # metrics_path defaults to '/metrics'
-    # scheme defaults to 'http'.
-
-    static_configs:
-      - targets: ["localhost:9090"]
-
-  - job_name: 'node_exporter_metrics'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['localhost:9100']
-
-  - job_name: 'validator_metrics'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['localhost:9184']" > /etc/prometheus/prometheus.yml
+cp prometheus-example.yaml /etc/prometheus/prometheus.yml
 
 # Restart Prometheus to apply new configuration changes.
 sudo systemctl restart prometheus
@@ -384,4 +247,3 @@ EOF
 
 # Dashboard template to use for SUI validator in Grafana: https://grafana.com/grafana/dashboards/18297-sui-validator-dashboard-1-0
 # How to add Data Source and Dashboard to Grafana: https://www.digitalocean.com/community/tutorials/how-to-monitor-mongodb-with-grafana-and-prometheus-on-ubuntu-20-04
-

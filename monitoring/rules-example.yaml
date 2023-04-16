@@ -1,0 +1,94 @@
+groups:
+  - name: sui-node
+    rules:
+      - alert: NodeDown
+        expr: increase(uptime{}[5m]) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sui Node {{ $labels.instance }} uptime is stuck"
+          description: "This rule fires when a Sui node goes down or becomes unresponsive. The `expr` field checks if the uptime of the node has been stuck at 0 for the past 5 minutes. The `for` field specifies that the rule should only fire if the condition is true for at least 1 minute. The `labels` field defines the severity level of the alert as \"critical\", and the `annotations` field provides a summary and description of the alert, indicating which Sui node is affected."
+
+      - alert: NodeCurrentRoundStuck
+        expr: increase(current_round{}[5m]) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sui Node {{ $labels.instance }} current round is stuck"
+          description: "This rule fires when a Sui node's current round becomes stuck. The `expr` field checks if the current round of the node has been stuck at 0 for the past 5 minutes. The `for` field specifies that the rule should only fire if the condition is true for at least 1 minute. The `labels` field defines the severity level of the alert as \"critical\", and the `annotations` field provides a summary and description of the alert, indicating which Sui node is affected."
+
+      - alert: NodeLastCommittedRoundsStuck
+        expr: increase(last_committed_round{}[5m]) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sui Node {{ $labels.instance }} last committed round is stuck"
+          description: "This rule fires when a Sui node's last committed round becomes stuck. The `expr` field checks if the last committed round of the node has been stuck at 0 for the past 5 minutes. The `for` field specifies that the rule should only fire if the condition is true for at least 1 minute. The `labels` field defines the severity level of the alert as \"critical\", and the `annotations` field provides a summary and description of the alert, indicating which Sui node is affected."
+
+      - alert: LastExecutedCheckpointStuck
+        expr: increase(last_executed_checkpoint{}[5m]) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Checkpoints are not being executed on {{ $labels.instance }}"
+          description: "This rule fires when checkpoints are not being executed on a Sui node. The `expr` field checks if the last executed checkpoint of the node has been stuck at 0 for the past 5 minutes. The `for` field specifies that the rule should only fire if the condition is true for at least 1 minute. The `labels` field defines the severity level of the alert as \"critical\", and the `annotations` field provides a summary and description of the alert, indicating which Sui node is affected."
+
+      - alert: LowCertificatesCreatedRate
+        expr: rate(certificates_created{}[5m]) < 1.0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Certificates created rate is too low on {{ $labels.instance }}"
+          description: "This rule fires when the rate of certificates being created is below 1 per second for the last 1 minute. The `expr` field checks the per-second rate of the `certificates_created` metric over the last 5 minutes, and the `for` field specifies that the rule should only fire if the condition is true for at least 1 minute. The `labels` field defines the severity level of the alert as \"critical\", and the `annotations` field provides a summary and description of the alert, indicating which Sui node is affected."
+
+      - alert: HighSequencingCertificateLatency
+        expr: rate(sequencing_certificate_latency_count{}[5m]) > 10.0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High sequencing certificate latency on {{ $labels.instance }}"
+          description: "This rule fires when the rate of sequencing certificate latency is above 10 per second for the last 5 minutes. The `expr` field checks the per-second rate of the `sequencing_certificate_latency_count` metric over the last 5 minutes, and the `for` field specifies that the rule should only fire if the condition is true for at least 5 minutes. The `labels` field defines the severity level of the alert as \"warning\", and the `annotations` field provides a summary and description of the alert, indicating which Sui node is affected."
+
+      - alert: HighNonConsensusCertificateLatency
+        expr: rate(validator_service_handle_certificate_non_consensus_latency_count{}[5m]) >= 3.0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High non-consensus certificate latency on {{ $labels.instance }}"
+          description: "This rule fires when the rate of non-consensus certificate latency is above or equal to 3 per second for the last 5 minutes. The `expr` field checks the per-second rate of the `validator_service_handle_certificate_non_consensus_latency_count` metric over the last 5 minutes, and the `for` field specifies that the rule should only fire if the condition is true for at least 10 minutes. The `labels` field defines the severity level of the alert as \"warning\", and the `annotations` field provides a summary and description of the alert, indicating which Sui node is affected."
+
+  - name: system
+    rules:
+      - alert: HighCpuUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage on {{ $labels.instance }} has been above 80% for the last 1 minute."
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_Active_bytes / node_memory_MemTotal_bytes) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage on {{ $labels.instance }} has been above 80% for the last 5 minutes."
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes{fstype="ext4"} - node_filesystem_free_bytes{fstype="ext4"}) / node_filesystem_size_bytes{fstype="ext4"} > 0.9
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage on {{ $labels.instance }} has been above 90% for the last 10 minutes."
