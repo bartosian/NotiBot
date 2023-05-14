@@ -1,5 +1,9 @@
-## Discord Call Bot
-This repository contains the code for a Discord bot that can initiate a phone call using Twilio when a message is posted to a specific channel. This bot is written in Go.
+## Twilio-Discord Integration Bot
+Twilio-Discord Alert Bot is a powerful notification system designed to keep you informed about important events happening in your Discord channels and alert manager services. This bot listens to designated Discord channels for new messages and promptly sends an SMS or initiates a phone call to inform you about these updates.
+
+Simultaneously, the bot can connect to remote or local alert manager services, continuously monitoring for any triggered alerts. When an alert is triggered, the bot instantly calls or sends an SMS to inform you about the situation.
+
+Moreover, this bot doesn't just inform you about the problems, it also keeps you updated on their resolution. When an alert is resolved, the bot notifies you via call or SMS, ensuring you're always up-to-date about the status of your systems.
 
 ### Installation
 
@@ -61,6 +65,12 @@ go run main.go --envrc
 
 ```shell
 go run main.go --alerts
+```
+
+10. For a more customized experience, the bot supports an optional command-line flag --discord. When enabled, this flag allows the bot to listen to designated Discord channels for new messages.
+
+```shell
+go run main.go --discord
 ```
 
 # License
