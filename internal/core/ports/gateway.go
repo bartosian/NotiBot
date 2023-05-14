@@ -10,9 +10,9 @@ type NotifierGateway interface {
 }
 
 type (
-	NewMessageHandler func(s *discordgo.Session, m *discordgo.MessageCreate)
+	MessageHandler = func(s *discordgo.Session, m *discordgo.MessageCreate)
 
 	DiscordGateway interface {
-		AddHandler(handler NewMessageHandler) error
+		AddHandler(handler MessageHandler) error
 	}
 )

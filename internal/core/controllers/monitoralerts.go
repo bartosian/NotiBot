@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"dstwilio/internal/core/domain"
-	"dstwilio/pkg/l0g"
-	dstime "dstwilio/pkg/time"
 )
 
 const (
@@ -128,11 +126,6 @@ func (c *NotifierController) newAlertsHandler(isTriggered bool) (bool, error) {
 		}
 	}
 
-	currentTime := dstime.GetCurrentTime()
-
-	fmt.Println(currentTime)
-	l0g.PrintDelimiter()
-
 	err = c.notifierGateway.CreateCall(voiceBody)
 	if err != nil {
 		c.logger.Error("error creating call", err, nil)
@@ -146,8 +139,6 @@ func (c *NotifierController) newAlertsHandler(isTriggered bool) (bool, error) {
 
 		return false, err
 	}
-
-	l0g.PrintDelimiter()
 
 	return isTriggered, nil
 }

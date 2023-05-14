@@ -13,7 +13,7 @@ import (
 // The function registers the handler with the Discord session and opens the connection.
 // It then waits for a termination signal to gracefully close the connection.
 // If an error occurs during the session opening or closing, it is logged, and the function returns the error.
-func (d *Gateway) AddHandler(handler ports.NewMessageHandler) error {
+func (d *Gateway) AddHandler(handler ports.MessageHandler) error {
 	d.session.AddHandler(handler)
 
 	if err := d.session.Open(); err != nil {

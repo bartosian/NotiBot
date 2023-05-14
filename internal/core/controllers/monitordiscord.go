@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/bwmarrin/discordgo"
+
+	"dstwilio/internal/core/ports"
 )
 
 const (
@@ -17,7 +19,9 @@ var targetChannel = os.Getenv("DISCORD_CHANNEL")
 // MonitorDiscord starts monitoring the Discord channel for new messages by adding the message handler.
 // It returns an error if there is an issue adding the message handler.
 func (c *NotifierController) MonitorDiscord() error {
-	if err := c.discordGateway.AddHandler(c.newMessageHandler); err != nil {
+	messageHandler := c.newMessageHandler()
+
+	if err := c.discordGateway.AddHandler(messageHandler); err != nil {
 		c.logger.Error("error adding message handler", err, nil)
 
 		return err
@@ -26,35 +30,31 @@ func (c *NotifierController) MonitorDiscord() error {
 	return nil
 }
 
-// newMessageHandler is the handler function for new messages in the Discord channel.
-// It checks if the message author is the channel owner and skips further processing if true.
-// Otherwise, it retrieves the Discord channel by ID and performs actions based on the target channel.
-func (c *NotifierController) newMessageHandler(session *discordgo.Session, message *discordgo.MessageCreate) {
-	// if message originator is the channel owner - dismissing
-	if message.Author.ID == session.State.User.ID {
-		return
-	}
+func (c *NotifierController) newMessageHandler() ports.MessageHandler {
+	return func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		targetChannel = os.Getenv("DISCORD_CHANNEL")
 
-	discordChannel, err := session.Channel(message.ChannelID)
-	if err != nil {
-		c.logger.Error("error getting channel by id", err, nil)
-
-		return
-	}
-
-	if discordChannel.Name == targetChannel {
-		err := c.notifierGateway.CreateCall(buildCallVoice(message.Author.Username, targetChannel))
+		messageChannel, err := s.Channel(m.ChannelID)
 		if err != nil {
-			c.logger.Error("error creating call", err, nil)
+			c.logger.Error("error getting channel by id", err, nil)
 
-			os.Exit(1)
+			return
 		}
 
-		err = c.notifierGateway.SendMessage(buildMessageText(message.Author.Username, targetChannel))
-		if err != nil {
-			c.logger.Error("error sending message", err, nil)
+		if messageChannel.Name == targetChannel {
+			err := c.notifierGateway.CreateCall(buildCallVoice(m.Author.Username, targetChannel))
+			if err != nil {
+				c.logger.Error("error creating call", err, nil)
 
-			os.Exit(1)
+				os.Exit(1)
+			}
+
+			err = c.notifierGateway.SendMessage(buildMessageText(m.Author.Username, targetChannel))
+			if err != nil {
+				c.logger.Error("error sending message", err, nil)
+
+				os.Exit(1)
+			}
 		}
 	}
 }

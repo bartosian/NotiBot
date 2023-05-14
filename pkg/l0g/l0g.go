@@ -1,9 +1,7 @@
 package l0g
 
 import (
-	"fmt"
 	"go.uber.org/zap"
-	"strings"
 )
 
 type Logger interface {
@@ -30,19 +28,12 @@ var (
 )
 
 func NewLogger(options ...zap.Option) Logger {
-	// Automatically add CallerSkip for service loggers
 	options = append([]zap.Option{AddCallerSkip(1)}, options...)
 	logger, _ := zap.NewProduction(options...)
 
 	return &Log{
 		internal: logger,
 	}
-}
-
-func NewUnaryLogger(options ...zap.Option) *zap.Logger {
-	logger, _ := zap.NewProduction(options...)
-
-	return logger
 }
 
 func (logger *Log) Info(msg string, data interface{}) {
@@ -63,11 +54,4 @@ func (logger *Log) Sugar() *zap.SugaredLogger {
 
 func (logger *Log) Sync() error {
 	return logger.internal.Sync()
-}
-
-// PrintDelimiter prints a delimiter line to the console. This can be used to visually separate sections of console output.
-func PrintDelimiter() {
-	delimiter := strings.Repeat("-", 60)
-
-	fmt.Println(delimiter)
 }

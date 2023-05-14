@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	requiredTwilioVars  = []string{"TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER", "CLIENT_PHONE_NUMBER", "DISCORD_BOT_TOKEN", "DISCORD_CHANNEL"}
+	requiredTwilioVars  = []string{"TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_PHONE_NUMBER", "CLIENT_PHONE_NUMBER"}
 	requiredDiscordVars = []string{"DISCORD_BOT_TOKEN", "DISCORD_CHANNEL"}
 	requiredAlertVars   = []string{"ALERT_MANAGER_URL"}
 	errEnvVarNotFound   = errors.New("environment variable not found")
