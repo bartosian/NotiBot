@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	alertVoiceTriggeredTemplate   = "NEW ALERT TRIGGERED!\n\n*ALERT NAME:* %s\n*SUMMARY:* %s\n*START TIME:* %s\n*END TIME:* %s\n*STATUS:* %s\n\n"
-	alertMessageTriggeredTemplate = "🚨 NEW ALERT TRIGGERED!\n\nALERT NAME: %s\n\nSUMMARY: %s\n\nSTART TIME: %s\n\nEND TIME: %s\n\nSTATUS: %s\n\n"
+	alertVoiceTriggeredTemplate   = "NEW ALERT TRIGGERED!\n\nALERT NAME: %s\nSUMMARY: %s\nSTART TIME: %s\nEND TIME: %s\nSTATUS: %s\n\n"
+	alertMessageTriggeredTemplate = "🚨 NEW ALERT TRIGGERED!\n\n🔖 Alert Name: %s\n\n📝 Summary: %s\n\n⏱️ Start Time: %s\n\n⏳ End Time: %s\n\n🚦 Status: %s\n\n"
 	alertMessageRecoveredTemplate = "✅ ALL ALERTS HAVE BEEN RESOLVED AND THE SYSTEM IS NOW OPERATING NORMALLY."
 
-	alertIntervalCheck          = 1 * time.Minute
-	alertTriggeredIntervalCheck = 5 * time.Minute
+	alertIntervalCheck = 1 * time.Minute
+	maxIntervalCheck   = 15 * time.Minute
 )
 
 // MonitorAlerts continuously checks for new alerts at an interval. If an alert is triggered, the interval is increased.
@@ -30,19 +30,28 @@ func (c *NotifierController) MonitorAlerts() error {
 
 	intervalCheck := alertIntervalCheck
 
+	ticker := time.NewTicker(alertIntervalCheck)
+	defer ticker.Stop()
+
 	for {
-		alertTriggered, err = c.newAlertsHandler(alertTriggered)
-		if err != nil {
-			return err
-		}
+		select {
+		case <-ticker.C:
+			alertTriggered, err = c.newAlertsHandler(alertTriggered)
+			if err != nil {
+				return err
+			}
 
-		if alertTriggered {
-			intervalCheck = alertTriggeredIntervalCheck
-		} else {
-			intervalCheck = alertIntervalCheck
-		}
+			if alertTriggered {
+				intervalCheck *= 2
+				if intervalCheck > maxIntervalCheck {
+					intervalCheck = maxIntervalCheck
+				}
+			} else {
+				intervalCheck = alertIntervalCheck
+			}
 
-		time.Sleep(intervalCheck)
+			ticker.Reset(intervalCheck)
+		}
 	}
 }
 
