@@ -1,8 +1,18 @@
 package ports
 
-import "dstwilio/internal/core/domain"
+import (
+	"github.com/bwmarrin/discordgo"
+)
 
 type NotifierGateway interface {
-	CreateCall(call domain.Call) error
-	SendMessage(message domain.Message) error
+	CreateCall(message string) error
+	SendMessage(message string) error
 }
+
+type (
+	NewMessageHandler func(s *discordgo.Session, m *discordgo.MessageCreate)
+
+	DiscordGateway interface {
+		AddHandler(handler NewMessageHandler) error
+	}
+)

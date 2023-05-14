@@ -4,13 +4,11 @@ import (
 	"fmt"
 
 	openapi "github.com/twilio/twilio-go/rest/api/v2010"
-
-	"dstwilio/internal/core/domain"
 )
 
 // CreateCall creates a new call using the Twilio gateway.
-func (t *Gateway) CreateCall(call domain.Call) error {
-	callParams := t.buildCallParams(call)
+func (t *Gateway) CreateCall(message string) error {
+	callParams := t.buildCallParams(message)
 
 	result, err := t.client.Api.CreateCall(callParams)
 	if err != nil {
@@ -23,11 +21,11 @@ func (t *Gateway) CreateCall(call domain.Call) error {
 }
 
 // buildCallParams builds the Twilio call parameters based on the domain.Call object.
-func (t *Gateway) buildCallParams(call domain.Call) *openapi.CreateCallParams {
+func (t *Gateway) buildCallParams(message string) *openapi.CreateCallParams {
 	return &openapi.CreateCallParams{
-		From:  &call.From,
-		To:    &call.To,
-		Twiml: buildTwiml(call.TwimlMessage),
+		From:  &t.fromPhoneNumber,
+		To:    &t.toPhoneNumber,
+		Twiml: buildTwiml(message),
 	}
 }
 
