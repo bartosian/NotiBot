@@ -1,6 +1,8 @@
 package main
 
 import (
+	"dstwilio/internal/core/domain"
+	"dstwilio/pkg/twilioclient"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,8 +14,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"dstwilio/twilioclient"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -165,36 +165,6 @@ func sendTextMessage(messageContent string) {
 	fmt.Println("Text message sent.")
 }
 
-type AlertReceiver struct {
-	Name string `json:"name"`
-}
-
-type AlertStatus struct {
-	InhibitedBy []string `json:"inhibitedBy"`
-	SilencedBy  []string `json:"silencedBy"`
-	State       string   `json:"state"`
-}
-
-type AlertLabels struct {
-	Alertname string `json:"alertname"`
-}
-
-type AlertAnnotations struct {
-	Summary string `json:"summary"`
-}
-
-type AlertData struct {
-	Annotations  AlertAnnotations `json:"annotations"`
-	EndsAt       string           `json:"endsAt"`
-	Fingerprint  string           `json:"fingerprint"`
-	Receivers    []AlertReceiver  `json:"receivers"`
-	StartsAt     string           `json:"startsAt"`
-	Status       AlertStatus      `json:"status"`
-	UpdatedAt    string           `json:"updatedAt"`
-	GeneratorURL string           `json:"generatorURL"`
-	Labels       AlertLabels      `json:"labels"`
-}
-
 func checkAlerts(isTriggered bool) bool {
 	resp, err := http.Get(os.Getenv("ALERT_MANAGER_URL"))
 	if err != nil {
@@ -211,7 +181,7 @@ func checkAlerts(isTriggered bool) bool {
 	var (
 		voiceBody   string
 		messageBody string
-		alertList   []AlertData
+		alertList   []domain.Alert
 	)
 
 	err = json.Unmarshal(data, &alertList)
@@ -235,7 +205,7 @@ func checkAlerts(isTriggered bool) bool {
 
 		for _, alert := range alertList {
 			voiceBody += fmt.Sprintf(alertVoiceTriggeredTemplate,
-				alert.Labels.Alertname,
+				alert.Labels.AlertName,
 				alert.Annotations.Summary,
 				alert.StartsAt,
 				alert.EndsAt,
@@ -243,7 +213,7 @@ func checkAlerts(isTriggered bool) bool {
 			)
 
 			messageBody += fmt.Sprintf(alertMessageTriggeredTemplate,
-				alert.Labels.Alertname,
+				alert.Labels.AlertName,
 				alert.Annotations.Summary,
 				alert.StartsAt,
 				alert.EndsAt,
