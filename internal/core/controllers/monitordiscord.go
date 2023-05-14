@@ -59,12 +59,12 @@ func (c *NotifierController) newMessageHandler(session *discordgo.Session, messa
 	}
 }
 
-// buildCallVoice creates the call voice content using the provided channel names.
+// buildDiscordCallVoice creates the call voice content using the provided channel names.
 func buildCallVoice(fromChannel, toChannel string) string {
 	return fmt.Sprintf(callVoiceTemplate, fromChannel, toChannel)
 }
 
-// buildMessageText creates the message text using the provided channel names.
+// buildDiscordMessageText creates the message text using the provided channel names.
 func buildMessageText(fromChannel, toChannel string) string {
 	return fmt.Sprintf(messageTextTemplate, fromChannel, toChannel)
 }

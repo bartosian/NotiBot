@@ -29,6 +29,7 @@ var (
 func main() {
 	logger := l0g.NewLogger()
 	flagSet := parseFlags()
+
 	checkMonitors(flagSet, logger)
 
 	if flagSet.readEnv {
@@ -48,6 +49,7 @@ func main() {
 
 	// Instantiate controllers
 	notifierController := controllers.NewNotifierController(notifierGateway, discordGateway, logger)
+
 	monitor(flagSet, notifierController, logger)
 }
 

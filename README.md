@@ -10,7 +10,7 @@ To install and run the bot, follow these steps:
 3. Install Go on your system.
 4. Clone the repository using the command git clone git@github.com:bartosian/dstwilio.git.
 5. Change to the cloned directory using the command ``cd dstwilio``.
-6. Build the executable using the command ``go build -o dstwilio main.go``.
+6. Build the executable using the command ``go build -o dstwilio ./cmd/main.go``.
 7. Move the executable to /usr/local/bin using the command ``sudo mv dstwilio /usr/local/bin``.
 8. Set the required environment variables and create a system service file. To create the service file, run the following commands:
 
@@ -26,10 +26,10 @@ Environment=\"DISCORD_BOT_TOKEN=<DISCORD_BOT_TOKEN>\"
 Environment=\"TWILIO_ACCOUNT_SID=<TWILIO_ACCOUNT_SID>\"
 Environment=\"TWILIO_AUTH_TOKEN=<TWILIO_AUTH_TOKEN>\"
 Environment=\"TWILIO_PHONE_NUMBER=<TWILIO_PHONE_NUMBER>\"
-Environment=\"YOUR_PHONE_NUMBER=<YOUR_PHONE_NUMBER>\"
+Environment=\"CLIENT_PHONE_NUMBER=<YOUR_PHONE_NUMBER>\"
 Environment=\"DISCORD_CHANNEL=<DISCORD_CHANNEL>\"
 Environment=\"ALERT_MANAGER_URL=<ALERT_MANAGER_URL>\"
-ExecStart=/usr/local/bin/dstwilio
+ExecStart=/usr/local/bin/dstwilio --alerts --discord
 Restart=on-failure
 RestartSec=always
 
