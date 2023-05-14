@@ -20,7 +20,7 @@ To install and run the bot, follow these steps:
 
 ```shell
 echo "[Unit]
-Description=Discord Call Bot
+Description=Twilio-Discord Integration Bot
 After=network.target
 
 [Service]
@@ -35,7 +35,6 @@ Environment=\"DISCORD_CHANNEL=<DISCORD_CHANNEL>\"
 Environment=\"ALERT_MANAGER_URL=<ALERT_MANAGER_URL>\"
 ExecStart=/usr/local/bin/dstwilio --alerts --discord
 Restart=on-failure
-RestartSec=always
 
 [Install]
 WantedBy=multi-user.target" > $HOME/dstwilio.service
