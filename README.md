@@ -9,14 +9,32 @@ Moreover, this bot doesn't just inform you about the problems, it also keeps you
 
 To install and run the bot, follow these steps:
 
-1. Create a [Twilio trial account](https://www.twilio.com/docs/usage/tutorials/how-to-use-your-free-trial-account) to obtain the necessary account information for the environment variables.
-2. Create a [Discord bot](https://discordpy.readthedocs.io/en/stable/discord.html) by following the instructions.
-3. Install Go on your system.
-4. Clone the repository using the command git clone git@github.com:bartosian/dstwilio.git.
-5. Change to the cloned directory using the command ``cd dstwilio``.
-6. Build the executable using the command ``go build -o dstwilio ./cmd/main.go``.
-7. Move the executable to /usr/local/bin using the command ``sudo mv dstwilio /usr/local/bin``.
-8. Set the required environment variables and create a system service file. To create the service file, run the following commands:
+1. **Create a [Twilio trial account](https://www.twilio.com/docs/usage/tutorials/how-to-use-your-free-trial-account) to obtain the necessary account information for the environment variables.**
+2. **Create a [Discord bot](https://discordpy.readthedocs.io/en/stable/discord.html) by following the instructions.**
+3. **Create a Discord channel:**
+
+   On your Discord server, right-click on the space where your channels are listed and click "Create Channel." 
+   Give your channel a name and click "Create."
+   Add the Bot to the Channel:
+
+   Navigate to the settings of the bot you created previously.
+   In the "Bot" section, you'll find a URL to add the bot to a server. Click on it.
+   Select your server from the dropdown list and click "Continue."
+   On the next page, ensure that the bot has the necessary permissions, then click "Authorize."
+
+4. **Follow these steps to set up notifications from the specific external Discord channels that you are interested in.**
+   
+   Go to the External Discord Channel:
+
+   Navigate to the external Discord channel you want to follow. Note that you need to have the 'Manage Channel' permission in your own channel, and the external channel must have 'Allow anyone to @mention this channel' enabled.
+   In the external Discord channel, find a message that has been marked as an announcement (these messages have a small megaphone icon next to them). Click on the "Follow" button on this message.
+   A dialog box will open asking where you want to send the announcements. Choose your own Discord channel from the dropdown menu and click "Follow."
+5. **Install Go on your system.**
+6. **Clone the repository using the command git clone git@github.com:bartosian/dstwilio.git.**
+7. **Change to the cloned directory using the command ``cd dstwilio``.**
+8. **Build the executable using the command ``go build -o dstwilio ./cmd/main.go``.**
+9. **Move the executable to /usr/local/bin using the command ``sudo mv dstwilio /usr/local/bin``.**
+10. Set the required environment variables and create a system service file. To create the service file, run the following commands:
 
 ```shell
 echo "[Unit]
