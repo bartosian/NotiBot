@@ -1,0 +1,86 @@
+name: Build and Publish Bot Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Check Tag Creator
+        run: |
+          if [[ "${{ github.actor }}" != "${{ github.repository_owner }}" ]]; then
+            echo "Error: Tag must be created by ${{ github.repository_owner }}"
+            exit 1
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: ${{ env.RELEASE_NOTES }}
+          draft: false
+          prerelease: false
+
+  upload_asset:
+    needs: create_release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          -
+            go-version: "1.19"
+            os: "ubuntu-latest"
+            arch: "amd64"
+            goos: "linux"
+            goarch: "amd64"
+          -
+            go-version: "1.19"
+            os: "windows-latest"
+            arch: "arm64"
+            goos: "windows"
+            goarch: "arm64"
+          -
+            go-version: "1.19"
+            os: "macOS-latest"
+            arch: "arm64"
+            goos: "darwin"
+            goarch: "arm64"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+          check-latest: true
+
+      - name: Get dependencies
+        run: go get -v -t -d ./...
+
+      - name: Build Binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          cd cmd
+          go build -o dstwilio
+
+      - name: Upload Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./cmd/dstwilio
+          asset_name: dstwilio-${{ matrix.os }}-${{ matrix.arch }}
+          asset_content_type: application/x-executable
