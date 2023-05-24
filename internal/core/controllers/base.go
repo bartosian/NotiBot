@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"dstwilio/internal/core/ports"
-	"dstwilio/pkg/l0g"
+	"github.com/bartosian/notibot/internal/core/ports"
+	"github.com/bartosian/notibot/pkg/l0g"
 )
 
 // NotifierController handles the logic for sending notifications.

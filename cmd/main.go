@@ -8,11 +8,11 @@ import (
 	"github.com/joho/godotenv"
 	"golang.org/x/sync/errgroup"
 
-	"dstwilio/internal/core/controllers"
-	"dstwilio/internal/core/ports"
-	"dstwilio/internal/gateways/discordgw"
-	"dstwilio/internal/gateways/twiliogw"
-	"dstwilio/pkg/l0g"
+	"github.com/bartosian/notibot/internal/core/controllers"
+	"github.com/bartosian/notibot/internal/core/ports"
+	"github.com/bartosian/notibot/internal/gateways/discordgw"
+	"github.com/bartosian/notibot/internal/gateways/twiliogw"
+	"github.com/bartosian/notibot/pkg/l0g"
 )
 
 const (

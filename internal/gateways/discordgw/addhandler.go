@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"dstwilio/internal/core/ports"
+	"github.com/bartosian/notibot/internal/core/ports"
 )
 
 // AddHandler adds a new message handler to the Discord gateway.

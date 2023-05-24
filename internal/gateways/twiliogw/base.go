@@ -1,12 +1,13 @@
 package twiliogw
 
 import (
-	"github.com/twilio/twilio-go"
 	"os"
 
-	"dstwilio/internal/core/ports"
-	"dstwilio/pkg/l0g"
-	"dstwilio/pkg/twilioclient"
+	"github.com/twilio/twilio-go"
+
+	"github.com/bartosian/notibot/internal/core/ports"
+	"github.com/bartosian/notibot/pkg/l0g"
+	"github.com/bartosian/notibot/pkg/twilioclient"
 )
 
 type Gateway struct {
@@ -19,7 +20,7 @@ type Gateway struct {
 // NewTwilioGateway creates a new instance of the Twilio gateway.
 func NewTwilioGateway(logger l0g.Logger) ports.NotifierGateway {
 	return &Gateway{
-		client:          twilioclient.NewTwilioClientWithoutKeepAlives(),
+		client:          twilioclient.NewTwilioClient(),
 		fromPhoneNumber: os.Getenv("TWILIO_PHONE_NUMBER"),
 		toPhoneNumber:   os.Getenv("CLIENT_PHONE_NUMBER"),
 		logger:          logger,

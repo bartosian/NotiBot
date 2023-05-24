@@ -73,7 +73,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: |
           cd cmd
-          go build -o dstwilio
+          go build -o notibot
 
       - name: Upload Asset
         uses: actions/upload-release-asset@v1
@@ -81,6 +81,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./cmd/dstwilio
-          asset_name: dstwilio-${{ matrix.os }}-${{ matrix.arch }}
+          asset_path: ./cmd/notibot
+          asset_name: notibot-${{ matrix.os }}-${{ matrix.arch }}
           asset_content_type: application/x-executable

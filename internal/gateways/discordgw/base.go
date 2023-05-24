@@ -6,8 +6,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"dstwilio/internal/core/ports"
-	"dstwilio/pkg/l0g"
+	"github.com/bartosian/notibot/internal/core/ports"
+	"github.com/bartosian/notibot/pkg/l0g"
 )
 
 // Gateway represents a Discord gateway that manages the session and logger.
