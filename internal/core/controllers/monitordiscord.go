@@ -6,7 +6,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"dstwilio/internal/core/ports"
+	"github.com/bartosian/notibot/internal/core/ports"
 )
 
 const (

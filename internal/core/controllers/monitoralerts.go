@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"dstwilio/internal/core/domain"
+	"github.com/bartosian/notibot/internal/core/domain"
 )
 
 const (

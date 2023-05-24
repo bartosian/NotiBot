@@ -8,11 +8,11 @@ import (
 	twilioClient "github.com/twilio/twilio-go/client"
 )
 
-type NoConnReuseClient struct {
+type Client struct {
 	twilioClient.Client
 }
 
-func NewTwilioClientWithoutKeepAlives() *twilio.RestClient {
+func NewTwilioClient() *twilio.RestClient {
 	accountSID := os.Getenv("TWILIO_ACCOUNT_SID")
 	authToken := os.Getenv("TWILIO_AUTH_TOKEN")
 
@@ -20,7 +20,7 @@ func NewTwilioClientWithoutKeepAlives() *twilio.RestClient {
 		DisableKeepAlives: true,
 	}
 
-	customClient := &NoConnReuseClient{
+	client := &Client{
 		Client: twilioClient.Client{
 			Credentials: &twilioClient.Credentials{
 				Username: accountSID,
@@ -32,9 +32,9 @@ func NewTwilioClientWithoutKeepAlives() *twilio.RestClient {
 		},
 	}
 
-	customClient.SetAccountSid(accountSID)
+	client.SetAccountSid(accountSID)
 
 	return twilio.NewRestClientWithParams(twilio.ClientParams{
-		Client: customClient,
+		Client: client,
 	})
 }
