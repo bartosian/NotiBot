@@ -33,6 +33,7 @@ func (c *NotifierController) MonitorAlerts() error {
 	ticker := time.NewTicker(alertIntervalCheck)
 	defer ticker.Stop()
 
+	// nolint:gosimple
 	for {
 		select {
 		case <-ticker.C:
